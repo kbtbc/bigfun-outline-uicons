@@ -14,7 +14,10 @@ https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/main/
 - Weather day/night, raid egg `_ex`, pokéstop `_p1-3`, extra invasion IDs from the UIcons spec / other packs.
 
 # Formatting
-- All images except for Pokemon are 96x96px (unchanged from UIcons/wwm).
+- Pokémon icons are **93×93** to match TiMXL / uicons-outline sizing (contain-fit, aspect preserved, no crop).
+- Other folders keep prior sizes (typically 96×96 from UIcons/wwm).
+- 3px black inset outline + saturation punch on outlined assets.
+- Shadow (`_a1`) purple aura comes from the wwm source art.
 - Mega Charizard and Mega Mewtwo include merged X/Y mega forms from upstream.
 
 # Image Credits
