@@ -1,4 +1,4 @@
-name: Weekly PokeMiners check
+﻿name: Weekly PokeMiners check
 
 # Detects new Pokemon / forms in PokeMiners GO assets and builds them through
 # the locked pipeline. Opens a pull request for review; never pushes art to
@@ -51,6 +51,20 @@ jobs:
           if [ "$code" != "0" ] && [ "$code" != "2" ]; then exit "$code"; fi
           echo "found=$([ "$code" = "2" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
 
+      - name: Rebuild files whose source art changed
+        id: sync
+        env:
+          POGO_ASSETS: ${{ github.workspace }}/.cache/pogo_assets
+          MASTER_JSON: ${{ github.workspace }}/.cache/master-latest.json
+        run: |
+          set +e
+          echo "--- resolve drift (new art for existing names) ---" >> check-report.txt
+          python tools/sync_resolve.py --build | tee -a check-report.txt
+          code=$?
+          set -e
+          if [ "$code" != "0" ] && [ "$code" != "2" ]; then exit "$code"; fi
+          if [ "$code" = "2" ]; then echo "found=yes" >> "$GITHUB_OUTPUT"; fi
+
       - name: Coverage audit (informational)
         env:
           POGO_ASSETS: ${{ github.workspace }}/.cache/pogo_assets
@@ -62,11 +76,11 @@ jobs:
           python tools/audit_sources.py | tee -a check-report.txt
 
       - name: Regenerate index.json
-        if: steps.check.outputs.found == 'yes'
+        if: steps.check.outputs.found == 'yes' || steps.sync.outputs.found == 'yes'
         run: node -e "require('./index').update()"
 
       - name: Open pull request
-        if: steps.check.outputs.found == 'yes'
+        if: steps.check.outputs.found == 'yes' || steps.sync.outputs.found == 'yes'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

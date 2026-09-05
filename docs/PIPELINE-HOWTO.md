@@ -53,6 +53,7 @@ Produce a high-quality, consistent UIcons Pokémon pack for GO maps.
 | `tools/check_new_pokemon.py` | Weekly watcher core: finds newly released art the pack lacks. |
 | `tools/audit_coverage.py` | Master-walk audit: every master form, costume, gender variant, and shiny either has a pack file or is explained. Run after resolver changes and alongside the watcher. |
 | `tools/audit_sources.py` | Source-exhaustive audit (the reverse direction): every PokeMiners 256 file must be used by some pack file or explained. Catches art that rides no master field: Gigantamax and Urshifu bread modes, Primal. Fails on REAL-GAP. |
+| `tools/sync_resolve.py` | Resolve-drift guard. `tools/resolve-manifest.json` records the source each pack file was built from; this rebuilds any file whose resolution changed. Closes the base-copy hole: a form registered in the master before its art ships (Pikachu Glass Helmet 2026) gets upgraded to real art automatically the week PokeMiners exports it. |
 | `tools/check_public_contract.py` | README, `package.json`, root `index.json` sanity (no `.git` key, UIcons folder set). |
 
 ### Environment
