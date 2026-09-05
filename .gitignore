@@ -41,5 +41,5 @@ dist/**/*
 yarn.lock
 
 __pycache__/
-*.py[cod]
-uicon-samples/
+*.pyc
+
