@@ -43,3 +43,6 @@ yarn.lock
 __pycache__/
 *.pyc
 
+# Local PokeMiners source cache (never ship source art)
+.cache/
+

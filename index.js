@@ -4,6 +4,7 @@ const SKIP_DIRS = new Set([
   'node_modules',
   'scripts',
   'docs',
+  'tools',
   '.cursor',
   '.github',
 ])

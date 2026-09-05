@@ -85,6 +85,11 @@ SIL_THR = 20
 SOLID_THR = 128
 STROKE_SAFE = 5
 SMOKE_SCALE = 1.12
+# Prototype inner AA (NOT locked). 0 = production B1, unchanged.
+# When > 0: ramp width in px for the signed-DF body edge ramp near the opaque
+# core, composited over a black stroke backing band so the ramp reveals stroke,
+# never the map tile. Distance-gated on the opaque core; wings stay source alpha.
+AA_IN = float(os.environ.get("BIGFUN_AA_IN", "0") or 0.0)
 UICONS_POKE = re.compile(
     r"^(\d+)(?:_b(\d+))?(?:_e(\d+))?(?:_f(\d+))?(?:_c(\d+))?(?:_g(\d+))?(?:_a(\d+))?(_s)?\.png$"
 )
@@ -166,6 +171,7 @@ def add_outer_stroke(
     stroke_px: float = STROKE_PX,
     aa_out: float = AA_OUT,
     cut_px: float = CUT_PX,
+    aa_in: float = AA_IN,
 ) -> Image.Image:
     """Outer-ring stroke + B1 body alpha (Kelly-locked 2026-09-04, CUT_PX=1.0).
 
@@ -175,12 +181,23 @@ def add_outer_stroke(
     B1 body alpha: opaque within CUT_PX of the opaque core (alpha >= SOLID_THR);
     beyond that, keep source mid-alpha so wings survive. Soft OUTER AA only.
     scrub_white_only after composite.
+
+    aa_in > 0 (prototype, not locked): instead of the binary B1 harden, body
+    alpha near the opaque core follows a signed-DF ramp max(source, ramp) that
+    falls from 255 at the core edge to 0 at cut_px + aa_in. The ramp band is
+    backed by opaque black on the stroke layer so it always blends into stroke,
+    never the map tile (no white hairline by construction). Both the ramp and
+    the backing are gated on distance to the opaque core, so translucent wings
+    beyond the band keep exact source alpha.
     """
     im = premultiply(im)
     arr = np.array(im.convert("RGBA")).astype(np.float32)
     alpha = arr[:, :, 3]
     sil = alpha > SIL_THR
     solid = alpha >= SOLID_THR
+
+    dist_to_core = edt_outside(solid).astype(np.float32)
+    dist_to_core = np.where(solid, 0.0, dist_to_core)
 
     dist_out = edt_outside(sil)
     hard = stroke_px
@@ -194,6 +211,20 @@ def add_outer_stroke(
     dist_in_solid = edt_outside(~solid)
     under = solid & (dist_in_solid <= 0.6)
     stroke_a[under] = np.maximum(stroke_a[under], 255.0)
+    if aa_in > 0:
+        # Backing for the inner-AA ramp: opaque black under the body fringe,
+        # only where the fringe is near BOTH the opaque core and the silhouette
+        # edge (the body/ring join). Membrane pixels deep inside a wing are near
+        # a solid frame but far from the silhouette edge, so they get no backing
+        # and cannot be blacked. Plus a slightly deeper underlap inside the core
+        # near the edge so the ramp seats on stroke.
+        d_edge = edt_outside(~sil).astype(np.float32)
+        join_band = dist_to_core <= cut_px + aa_in
+        near_edge = d_edge <= cut_px + aa_in + 0.6
+        backing = sil & (~solid) & join_band & near_edge
+        stroke_a[backing] = 255.0
+        under_aa = solid & (dist_in_solid <= 0.6 + aa_in) & near_edge
+        stroke_a[under_aa] = np.maximum(stroke_a[under_aa], 255.0)
 
     sa = Image.fromarray(np.clip(stroke_a, 0, 255).astype(np.uint8), "L").filter(
         ImageFilter.GaussianBlur(0.45)
@@ -221,14 +252,20 @@ def add_outer_stroke(
     sa_safe = np.maximum(alpha, 1e-6)[..., None]
     straight = np.clip(arr[:, :, :3] / (sa_safe / 255.0), 0, 255)
 
-    dist_to_core = edt_outside(solid).astype(np.float32)
-    dist_to_core = np.where(solid, 0.0, dist_to_core)
     near_core = dist_to_core <= cut_px
     body_a = np.zeros_like(alpha, dtype=np.float32)
-    harden = near_core & (alpha > SIL_THR)
-    body_a[harden] = 255.0
-    far = (~near_core) & (alpha > SIL_THR)
-    body_a[far] = alpha[far]
+    if aa_in > 0:
+        # Signed-DF ramp: 255 at the opaque core falling to 0 at cut_px + aa_in,
+        # never below source alpha. Wings beyond the band keep exact source
+        # alpha (ramp is 0 there) — distance gate, not an alpha gate.
+        ramp = 255.0 * np.clip(1.0 - dist_to_core / max(cut_px + aa_in, 1e-6), 0.0, 1.0)
+        inside = alpha > SIL_THR
+        body_a[inside] = np.maximum(alpha[inside], ramp[inside])
+    else:
+        harden = near_core & (alpha > SIL_THR)
+        body_a[harden] = 255.0
+        far = (~near_core) & (alpha > SIL_THR)
+        body_a[far] = alpha[far]
 
     body_out = np.zeros_like(arr)
     body_out[:, :, :3] = straight
