@@ -104,23 +104,26 @@ def form_token(dex: str, form_id: str | None) -> str | None:
 
 
 def evo_form(dex: str, evo: str | None) -> str | None:
+    """UIcons _e{id} -> source form token, ids from the TemporaryEvolution
+    proto (master temp_evolutions keys): 1 MEGA, 2 MEGA_X, 3 MEGA_Y, 4 PRIMAL.
+    Maps request the proto id, so Charizard/Mewtwo X/Y live at _e2/_e3.
+    Legacy _e1/_e2 X/Y names are kept in the pack as compatibility copies."""
     if not evo:
         return None
     evo = str(evo)
-    # Charizard/Mewtwo have X/Y
     x = addr_key(dex, form="MEGA_X")
-    y = addr_key(dex, form="MEGA_Y")
-    mega = addr_key(dex, form="MEGA")
     if evo == "1":
-        if x in ADDR_BY_NAME:
-            return "MEGA_X"
-        if mega in ADDR_BY_NAME:
-            return "MEGA"
-        return "MEGA"
+        # Plain Mega; for X/Y species (no plain Mega art) keep the legacy
+        # convention where _e1 showed Mega X.
+        return "MEGA_X" if x in ADDR_BY_NAME else "MEGA"
     if evo == "2":
-        if y in ADDR_BY_NAME:
-            return "MEGA_Y"
+        # Proto: Mega X. Legacy trap: X/Y species used to ship Y here; for
+        # single-Mega species _e2 never resolves (no MEGA_X art) and misses.
+        return "MEGA_X" if x in ADDR_BY_NAME else "MEGA_Y"
+    if evo == "3":
         return "MEGA_Y"
+    if evo == "4":
+        return "PRIMAL"
     return None
 
 
@@ -271,9 +274,13 @@ def _form_tokens(dex, form_id, bread, evo):
     if eform:
         tokens.append(eform)
     if bread == "2":
+        # Gigantamax. Urshifu's two GMAX styles ship as BREAD_DOUGH_MODE
+        # tokens: MODE = single strike (red, _b2), MODE_2 = rapid strike
+        # (blue, _b3). Hue-matched against wwm's field-tested 892_b2/_b3.
         tokens.append("GIGANTAMAX")
+        tokens.append("BREAD_DOUGH_MODE")
     if bread == "3":
-        tokens.append("GIGANTAMAX")
+        tokens.append("BREAD_DOUGH_MODE_2")
     # Full proto first (UNOWN_A, BURMY_PLANT) — matches PokeMiners pm*.fPROTO.icon.png
     tokens.extend(_master_form_protos(dex, form_id))
     ft = form_token(dex, form_id)
@@ -304,6 +311,10 @@ def resolve_pokemon(filename: str) -> tuple[Path | None, str]:
     wants_costume = bool(c)
     wants_form = bool(f) and bool(_master_form_protos(dex, f) or form_token(dex, f))
     wants_evo = bool(e)
+    # Gigantamax (_b2, Urshifu _b3): dedicated fGIGANTAMAX Addressable art must
+    # not be preempted by the numbered base shortcut. Dynamax (_b1) has no art
+    # of its own by design and keeps resolving to base.
+    wants_giga = b in ("2", "3")
     wants_shiny = shiny
     forms = _form_tokens(dex, f, b, e)
     costumes = []
@@ -336,10 +347,20 @@ def resolve_pokemon(filename: str) -> tuple[Path | None, str]:
 
     d3 = f"{int(dex):03d}"
     form_idx = "00"
-    if e == "1":
-        form_idx = "51"
-    elif e == "2":
-        form_idx = "52"
+    if e:
+        # Numbered mega slots: _51 first mega, _52 second. Proto ids (see
+        # evo_form): e1 plain Mega / legacy X, e2 Mega X, e3 Mega Y, e4 Primal
+        # (Addressable only, no numbered slot). Dual-mega species are the ones
+        # with a _52 file.
+        dual = f"pokemon_icon_{int(dex):03d}_52.png" in PX256_BY_NAME
+        if e == "1":
+            form_idx = "51"
+        elif e == "2":
+            form_idx = "51" if dual else "52"
+        elif e == "3":
+            form_idx = "52"
+        else:
+            form_idx = None
     elif gender == "2" and not f:
         form_idx = "01"
     costume_idx = f"{int(c):02d}" if c else None
@@ -354,12 +375,12 @@ def resolve_pokemon(filename: str) -> tuple[Path | None, str]:
     if e:
         names_256.append(f"pokemon_icon_{d3}_{form_idx}{shiny_s}.png")
         names_256.append(f"pokemon_icon_{d3}_{form_idx}.png")
-    if not wants_costume and not wants_form:
-        # Only when no specific form was requested. A form request must never
-        # shortcut to the numbered base file here: species with both a numbered
-        # base and Addressable form art (Spinda patterns) would silently get
-        # base art. Form-specific Addressable candidates are tried next; a form
-        # with no art of its own falls through to the explicit miss below.
+    if not wants_costume and not wants_form and not wants_giga and not wants_evo:
+        # Only when no specific form / Gigantamax was requested. A form request
+        # must never shortcut to the numbered base file here: species with both
+        # a numbered base and Addressable form art (Spinda patterns, GMAX)
+        # would silently get base art. Form-specific Addressable candidates are
+        # tried next; a form with no art of its own falls through to the miss.
         names_256.append(f"pokemon_icon_{d3}_{form_idx}{shiny_s}.png")
         if gender != "2":
             # Same trap for female variants: the numbered base must not
