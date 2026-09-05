@@ -20,3 +20,5 @@ Public README/description/package.json must match main. Do not use `kbtbc/wwm-ou
 Locked baseline: `CANVAS=256`, `STROKE_PX=5.0`, `AA_OUT=1.35`, `CUT_PX=1.0`, `SIL_THR=20`, `SOLID_THR=128`, `STROKE_SAFE=5`, `SMOKE_SCALE=1.12`. Do not change stroke or punch except via mixed-sheet lock.
 
 How-tos: no em dashes, sentence-case headings, bold only when it changes a decision, active voice.
+
+Chat images: local `C:/...` paths NEVER render for Kelly. To show any sheet or sample, commit it under `docs/qa/` on main, push, verify the raw URL returns 200, then embed `https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/main/docs/qa/...` in the reply.
