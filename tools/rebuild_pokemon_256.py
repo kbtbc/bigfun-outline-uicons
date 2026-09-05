@@ -211,6 +211,7 @@ def add_outer_stroke(
     dist_in_solid = edt_outside(~solid)
     under = solid & (dist_in_solid <= 0.6)
     stroke_a[under] = np.maximum(stroke_a[under], 255.0)
+    d_edge = None
     if aa_in > 0:
         # Backing for the inner-AA ramp: opaque black under the body fringe,
         # only where the fringe is near BOTH the opaque core and the silhouette
@@ -258,9 +259,17 @@ def add_outer_stroke(
         # Signed-DF ramp: 255 at the opaque core falling to 0 at cut_px + aa_in,
         # never below source alpha. Wings beyond the band keep exact source
         # alpha (ramp is 0 there) — distance gate, not an alpha gate.
+        # The ramp only replaces B1 near the silhouette edge (the body/ring
+        # join). Interior core boundaries (e.g. Solosis nucleus/gel, wing
+        # frames deep inside a wing) keep exact B1 behavior, blended over 1px
+        # so no seam forms where the core recedes from the outer edge.
         ramp = 255.0 * np.clip(1.0 - dist_to_core / max(cut_px + aa_in, 1e-6), 0.0, 1.0)
         inside = alpha > SIL_THR
-        body_a[inside] = np.maximum(alpha[inside], ramp[inside])
+        aa_alpha = np.maximum(alpha, ramp)
+        b1_alpha = np.where(near_core, 255.0, alpha)
+        t = np.clip(cut_px + aa_in + 0.6 + 1.0 - d_edge, 0.0, 1.0)
+        blended = t * aa_alpha + (1.0 - t) * b1_alpha
+        body_a[inside] = blended[inside]
     else:
         harden = near_core & (alpha > SIL_THR)
         body_a[harden] = 255.0
