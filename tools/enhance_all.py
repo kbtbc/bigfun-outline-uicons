@@ -354,9 +354,19 @@ def resolve_pokemon(filename: str) -> tuple[Path | None, str]:
     if e:
         names_256.append(f"pokemon_icon_{d3}_{form_idx}{shiny_s}.png")
         names_256.append(f"pokemon_icon_{d3}_{form_idx}.png")
-    if not wants_costume:
+    if not wants_costume and not wants_form:
+        # Only when no specific form was requested. A form request must never
+        # shortcut to the numbered base file here: species with both a numbered
+        # base and Addressable form art (Spinda patterns) would silently get
+        # base art. Form-specific Addressable candidates are tried next; a form
+        # with no art of its own falls through to the explicit miss below.
         names_256.append(f"pokemon_icon_{d3}_{form_idx}{shiny_s}.png")
-        names_256.append(f"pokemon_icon_{d3}_00{shiny_s}.png")
+        if gender != "2":
+            # Same trap for female variants: the numbered base must not
+            # preempt Addressable .g2 art (female Eevee). The _01 female slot
+            # above still wins when it exists; otherwise the Addressable loop
+            # runs, and step 5 returns base art for non-dimorphic species.
+            names_256.append(f"pokemon_icon_{d3}_00{shiny_s}.png")
     for name in names_256:
         p = PX256_BY_NAME.get(name) or PX256_BY_NAME.get(name.lower())
         if p:
@@ -364,6 +374,18 @@ def resolve_pokemon(filename: str) -> tuple[Path | None, str]:
                 continue
             if wants_evo and form_idx in ("51", "52") and f"_{form_idx}" not in name:
                 continue
+            return p, "256"
+
+    # Female without a numbered _01 slot: dedicated Addressable .g2 art beats
+    # the numbered base (female Eevee), but the numbered base still beats the
+    # Addressable base for non-dimorphic species (numbered-first policy).
+    if gender == "2" and not wants_form and not wants_costume and not wants_evo:
+        for sh in ([True] if shiny else [False]):
+            hit = try_addr(None, None, "2", sh, "addr")
+            if hit:
+                return hit
+        p = PX256_BY_NAME.get(f"pokemon_icon_{d3}_00{shiny_s}.png")
+        if p:
             return p, "256"
 
     # Addressable only when no native 256 match (forms/costumes missing from 256 folder)

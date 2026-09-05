@@ -436,7 +436,10 @@ def resolve_base_name(name: str) -> str:
 
 _WORKER_READY = False
 
-def worker(name: str) -> tuple[str, str]:
+def worker(name: str, key: str | None = None) -> tuple[str, str]:
+    """Build one pack file. key overrides the resolver lookup name: used for
+    explicit base-art copies (no-art forms, Kelly policy 2026-09-05), where the
+    output name keeps its _f flag but the art comes from the base sprite."""
     global _WORKER_READY
     try:
         _ensure_enhance()
@@ -445,9 +448,10 @@ def worker(name: str) -> tuple[str, str]:
             _WORKER_READY = True
         aura = parse_aura(name)
         # resolve without aura so we get base sprite
-        key = name
+        if key is None:
+            key = name
         if aura:
-            key = re.sub(r"_a" + str(aura), "", name)
+            key = re.sub(r"_a" + str(aura), "", key)
         src, tag = resolve_pokemon(key)
         if src is None:
             return name, "skip:no-source"

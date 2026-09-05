@@ -51,6 +51,7 @@ Produce a high-quality, consistent UIcons Pokémon pack for GO maps.
 | `tools/check_wing_zone.py` | Asserts the distance-protected wing zone is byte-identical between two builds. |
 | `tools/verify_pokemon_256.py` | Canvas, fill, and pad spot checks. |
 | `tools/check_new_pokemon.py` | Weekly watcher core: finds newly released art the pack lacks. |
+| `tools/audit_coverage.py` | Global coverage audit: every master form, costume, gender variant, and shiny either has a pack file or is explained. Run after resolver changes and alongside the watcher. |
 | `tools/check_public_contract.py` | README, `package.json`, root `index.json` sanity (no `.git` key, UIcons folder set). |
 
 ### Environment
@@ -109,14 +110,26 @@ Implemented in `enhance_all.resolve_pokemon`. Order:
 2. Build form tokens from the game master proto first (`UNOWN_A`, `DARMANITAN_ZEN`),
    then aliases.
 3. Prefer numbered `Pokemon - 256x256`: `pokemon_icon_{ddd}_{form}_{costume}[_shiny].png`.
+   The numbered base `_00` file is only a candidate when **no** form and no female
+   variant was requested. This is load-bearing: species with both a numbered base and
+   Addressable form art (Spinda patterns, Hisuians, goggles Charmander) or Addressable
+   `.g2` art (female Eevee) silently got base art before the 2026-09-05 fix.
 4. Else 256 Addressable: `pm{dex}[.f{PROTO}][.c{N}][.g2][.s].icon.png` under
    `Pokemon - 256x256/Addressable Assets/`. Contain-fit may scale this art up.
 5. Never fall back to low-res sources when either 256 source exists.
 
-**A form must never silently resolve to the default species art and ship as a separate
-file.** When the resolver returns the same source for `{dex}_f{id}.png` as for
-`{dex}.png`, the base file covers that form (the Burmy-alias convention). The weekly
-watcher enforces this.
+**A form must never silently resolve to the default species art.** The resolver
+returns a miss for a form request with no art of its own. Since 2026-09-05 every
+non-default master form still ships a file (maps can tell Spinda patterns and
+Scatterbug regions apart): forms with their own art build from it, forms without
+build as **explicit base-art copies** through `worker(name, key={dex}.png)`. The
+copy is deliberate and keyed on the base name; nothing resolves silently.
+
+Female art lives in three places, all covered: the numbered `_01` slot (older
+gens), bare Addressable `.g2` (Frillish, Meowstic, Pyroar, Eevee line), and
+form/costume+`.g2` combos (costume Pikachu). ReactMap and Diadem request
+`_g2` names through uicons.js; missing files fall back to base, so a shipped
+`_g2` is strictly additive.
 
 ### Confirmed form mappings
 
@@ -317,10 +330,14 @@ sparse-clones PokeMiners, fetches the game master, runs
 `tools/check_new_pokemon.py --build`, regenerates `index.json`, and **opens a pull
 request** with the report. It never pushes art to `main` unattended.
 
-The watcher only builds names that satisfy every rule in §5: the species or form must be
-in the game master, must have GO art, and a form's resolved source must differ from the
-base resolve. New names get the family base, `_s` (only when shiny art resolves), `_a1`,
-`_a2`. Anything that errors lands in a NEEDS-REVIEW list in the PR body for a human.
+The watcher builds names by §5 rules: the species or form must be in the game master
+and the species must have GO art. Forms with their own art build from it; forms
+without build as explicit base-art copies. It also detects new female art (numbered
+`_01` and bare Addressable `.g2`). New names get the full family: base, `_s`, `_a1`,
+`_a1_s`, `_a2`, `_a2_s`, with every shiny variant gated on shiny source art
+resolving. The workflow then runs `tools/audit_coverage.py` and appends the report,
+which also catches form/costume+female combos the watcher does not scan. Anything
+that errors lands in a NEEDS-REVIEW list in the PR body for a human.
 
 ## 11. Positioning and community
 

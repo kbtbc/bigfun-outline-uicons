@@ -7,8 +7,8 @@ Fully [UICONS](https://github.com/UIcons/UIcons) compatible.
 Raw URL:
 https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/main/
 
-WebP variant (lossless, ~30% smaller, same icons) on the [`bigfun-webp-outline`](https://github.com/kbtbc/bigfun-outline-uicons/tree/bigfun-webp-outline) branch:
-https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/bigfun-webp-outline/
+WebP variant (lossless, ~30% smaller, same icons) on the [`webp`](https://github.com/kbtbc/bigfun-outline-uicons/tree/webp) branch:
+https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/webp/
 
 # Coverage
 - Pokémon: numbered PokeMiners 256 first, then 256 Addressable (contain-fit may scale that Addressable art). wwm fallback only if no GO art exists.

@@ -4,12 +4,18 @@
 Detects, against the current pack in pokemon/:
   1. New base dex: the game master lists the species, PokeMiners has GO 256 art
      (numbered or 256 Addressable), and pokemon/{dex}.png does not exist.
-  2. New forms: the form's proto resolves to PokeMiners art and
-     pokemon/{dex}_f{fid}.png does not exist (default forms and
+  2. New forms: every non-default master form (default forms and
      _NORMAL/_STANDARD aliases are covered by the base file, so skipped).
+     Forms with their own art build from it; forms without art of their own
+     build as explicit base-art copies (Kelly policy 2026-09-05: every form
+     gets a file so maps can tell Spinda patterns / Scatterbug regions apart).
+  3. New female art: a numbered _01 slot or bare Addressable .g2 with no
+     pack {dex}_g2.png. (Form/costume+female combos are audit_coverage.py's
+     job; run it alongside this watcher.)
 
 For every new name it builds the standard variant family through the locked
-pipeline: base, _s (only when shiny source art resolves), _a1, _a2.
+pipeline: base, _s (only when shiny source art resolves), _a1, _a1_s, _a2,
+_a2_s.
 
 Never guesses: only names whose source resolves through enhance_all's
 resolve_pokemon are built. Anything that errors is listed under NEEDS-REVIEW
@@ -24,6 +30,7 @@ Exit code: 0 = nothing new, 2 = new icons found (and built with --build).
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -57,13 +64,15 @@ def main() -> int:
         if m:
             have_art.add(m.group(1))
 
-    new_names: list[str] = []
+    # name -> resolver key override (None = resolve by own name;
+    # base-art copies resolve by the name with the _f flag stripped)
+    new_names: dict[str, str | None] = {}
     for dex, poke in (E.MASTER.get("pokemon") or {}).items():
         dex = str(dex)
         if dex not in have_art:
             continue  # no GO art: Home-only / unreleased, out of scope
         if f"{dex}.png" not in existing:
-            new_names.append(f"{dex}.png")
+            new_names[f"{dex}.png"] = None
         default_fid = str(poke.get("default_form_id") or "")
         for fid, form in (poke.get("forms") or {}).items():
             fid = str(fid)
@@ -75,35 +84,48 @@ def main() -> int:
             fname = f"{dex}_f{fid}.png"
             if fname in existing:
                 continue
-            # Hard rule: a form must never silently fall back to the default
-            # species art. resolve_pokemon returns the base sprite when it
-            # finds no form-specific art, so only treat the form as new when
-            # its resolved source differs from the base resolve. Same-art
-            # forms are covered by the base file (Burmy-alias convention).
+            # Form with its own art builds from it. Form without art of its
+            # own (resolver miss) builds as an explicit base-art copy, keyed
+            # on the base name, so long as the base resolves.
             src, _tag = E.resolve_pokemon(fname)
-            base_src, _bt = E.resolve_pokemon(f"{dex}.png")
-            if src is not None and src != base_src:
-                new_names.append(fname)
+            if src is not None:
+                new_names[fname] = None
+            elif E.resolve_pokemon(f"{dex}.png")[0] is not None:
+                new_names[fname] = f"{dex}.png"
+
+    # New female art: numbered _01 slot or bare Addressable pm{dex}.g2.
+    for name in E.PX256_BY_NAME:
+        gdex: str | None = None
+        nm = re.match(r"^pokemon_icon_(\d{3})_01\.png$", name)
+        if nm:
+            gdex = str(int(nm.group(1)))
+        else:
+            m = E.ADDR_PARSE.match(name)
+            if m and m.group(4) and not m.group(2) and not m.group(3) and ".s.icon" not in name:
+                gdex = m.group(1)
+        if gdex is not None and f"{gdex}_g2.png" not in existing:
+            new_names[f"{gdex}_g2.png"] = None
 
     built: list[str] = []
     skipped: list[str] = []
     needs_review: list[str] = []
     for name in sorted(new_names):
-        stem = name[:-4]
-        family = [name]
-        for suffix in ("_s", "_a1", "_a2"):
+        key = new_names[name]
+        stem, kstem = name[:-4], (key[:-4] if key else name[:-4])
+        # Shiny availability gates every _s variant, checked on the resolve key.
+        has_shiny = E.resolve_pokemon(f"{kstem}_s.png")[0] is not None
+        family: list[tuple[str, str | None]] = [(name, key)]
+        for suffix in ("_s", "_a1", "_a1_s", "_a2", "_a2_s"):
             variant = f"{stem}{suffix}.png"
             if variant in existing:
                 continue
-            if suffix == "_s":
-                src, _tag = E.resolve_pokemon(variant)
-                if src is None:
-                    skipped.append(f"{variant} (no shiny source)")
-                    continue
-            family.append(variant)
-        for fname in family:
+            if suffix.endswith("_s") and not has_shiny:
+                skipped.append(f"{variant} (no shiny source)")
+                continue
+            family.append((variant, f"{kstem}{suffix}.png" if key else None))
+        for fname, fkey in family:
             if build:
-                _n, status = R.worker(fname)
+                _n, status = R.worker(fname, key=fkey)
                 if status.startswith("ok"):
                     built.append(fname)
                 else:

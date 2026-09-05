@@ -51,6 +51,14 @@ jobs:
           if [ "$code" != "0" ] && [ "$code" != "2" ]; then exit "$code"; fi
           echo "found=$([ "$code" = "2" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
 
+      - name: Coverage audit (informational)
+        env:
+          POGO_ASSETS: ${{ github.workspace }}/.cache/pogo_assets
+          MASTER_JSON: ${{ github.workspace }}/.cache/master-latest.json
+        run: |
+          echo "--- coverage audit ---" >> check-report.txt
+          python tools/audit_coverage.py | tee -a check-report.txt
+
       - name: Regenerate index.json
         if: steps.check.outputs.found == 'yes'
         run: node -e "require('./index').update()"
