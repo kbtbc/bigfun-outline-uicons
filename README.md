@@ -7,6 +7,9 @@ Fully [UICONS](https://github.com/UIcons/UIcons) compatible.
 Raw URL:
 https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/main/
 
+WebP variant (lossless, ~30% smaller, same icons) on the [`bigfun-webp-outline`](https://github.com/kbtbc/bigfun-outline-uicons/tree/bigfun-webp-outline) branch:
+https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/bigfun-webp-outline/
+
 # Coverage
 - Pokémon: numbered PokeMiners 256 first, then 256 Addressable (contain-fit may scale that Addressable art). wwm fallback only if no GO art exists.
 - Shadow `_a1`: purple body wash plus PokeMiners `shadow_icon` on top. Not copied from wwm baked `_a1`.
