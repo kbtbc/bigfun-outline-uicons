@@ -349,7 +349,35 @@ resolving. The workflow then runs `tools/audit_coverage.py` and appends the repo
 which also catches form/costume+female combos the watcher does not scan. Anything
 that errors lands in a NEEDS-REVIEW list in the PR body for a human.
 
-## 11. Positioning and community
+## 11. Device cache extraction (Android)
+
+Proven 2026-09-05: icons can be harvested from a phone before PokeMiners publishes,
+or to verify a texture at the source. The 78 icons pulled this way matched
+PokeMiners' copies pixel-for-pixel within one encoder rounding step, so this route
+is trustworthy when it is the only one available.
+
+Requirements: any phone on **Android 10 or older** (Android 11+ locks
+`/sdcard/Android/data`; root would then be needed and GO blocks rooted devices),
+Pokémon GO installed and logged in, USB debugging on, `adb`, `pip install UnityPy`.
+
+1. Snapshot the bundle cache:
+   `adb shell ls /sdcard/Android/data/com.nianticlabs.pokemongo/files/UnityCache/Shared/ > before.txt`
+2. On the phone, render the target sprite. The Pokédex form/costume gallery is the
+   reliable trigger: every icon shown on screen downloads its bundle.
+3. Diff the listing against `before.txt`; each new directory is one bundle
+   (names are opaque hashes, so the timestamp diff is the only reliable mapping).
+4. `adb pull` the new directories and load each `__data` file with UnityPy. Icon
+   textures are `Texture2D`/`Sprite` objects named in PokeMiners' Addressable
+   convention (`pm25.fVISOR_2026.g2.s.icon`), 256x256, ready for the source tree.
+
+The live asset catalogs sit next to the cache in
+`files/com.unity.addressables/` (`catalog_pkmn` variant carries every Pokémon
+bundle name). The CDN base URL is server-issued per session and never touches
+disk, so direct downloads are not possible; the render-then-pull loop is the way.
+A decrypted app bundle (IPA/APK) contains no Pokémon icons: only local UI bundles
+and the il2cpp metadata (useful to confirm which form enums a client knows).
+
+## 12. Positioning and community
 
 History, for honest promo copy: WhiteWillem's outline pack died with his repos. TiMXL73
 restored that lane from the same 93px-era art. This pack is the maintained PokeMiners
@@ -362,7 +390,7 @@ Luke. Do not post to Discord unless Kelly asks.
 Credits: PokeMiners, WatWowMap/wwm-uicons, UIcons (nileplumb / jms412 as checklist),
 Mygod, whitewillem.
 
-## 12. Change policy
+## 13. Change policy
 
 - Locked constants (§3) change only through a new golden-sheet lock approved by Kelly.
 - Any join or stroke change must pass §8 before a full rebuild.
