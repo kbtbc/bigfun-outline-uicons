@@ -1,0 +1,71 @@
+name: Weekly PokeMiners check
+
+# Detects new Pokemon / forms in PokeMiners GO assets and builds them through
+# the locked pipeline. Opens a pull request for review; never pushes art to
+# main unattended.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install pillow numpy
+
+      - name: Fetch PokeMiners sources (sparse)
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            https://github.com/PokeMiners/pogo_assets .cache/pogo_assets
+          cd .cache/pogo_assets
+          git sparse-checkout set "Images/Pokemon - 256x256" "Images/Rocket"
+
+      - name: Fetch game master
+        run: |
+          curl -fsSL -o .cache/master-latest.json \
+            https://raw.githubusercontent.com/WatWowMap/Masterfile-Generator/master/master-latest.json
+
+      - name: Check for new Pokemon and build them
+        id: check
+        env:
+          POGO_ASSETS: ${{ github.workspace }}/.cache/pogo_assets
+          MASTER_JSON: ${{ github.workspace }}/.cache/master-latest.json
+        run: |
+          set +e
+          python tools/check_new_pokemon.py --build | tee check-report.txt
+          code=$?
+          set -e
+          if [ "$code" != "0" ] && [ "$code" != "2" ]; then exit "$code"; fi
+          echo "found=$([ "$code" = "2" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+
+      - name: Regenerate index.json
+        if: steps.check.outputs.found == 'yes'
+        run: node -e "require('./index').update()"
+
+      - name: Open pull request
+        if: steps.check.outputs.found == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "bigfun-bot"
+          git config user.email "actions@github.com"
+          branch="pokeminers-update-$(date +%Y%m%d)"
+          git checkout -b "$branch"
+          git add pokemon "*.json" ":!check-report.txt" ":!.cache"
+          git commit -m "New PokeMiners Pokemon ($(date +%Y-%m-%d))" \
+            -m "$(cat check-report.txt)"
+          git push -u origin "$branch"
+          gh pr create --fill --body "$(printf 'Automated weekly PokeMiners check.\n\n```\n%s\n```' "$(cat check-report.txt)")"

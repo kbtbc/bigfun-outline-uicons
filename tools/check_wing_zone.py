@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Verify the distance-protected wing zone is untouched by the aa_in prototype.
+"""Verify the distance-protected wing zone is untouched between two builds.
+
+Usage: python tools/check_wing_zone.py [before_dir] [after_dir]
+Defaults: before = .cache/old_golden, after = pokemon/.
 
 For every golden file, pixels whose distance from the opaque core exceeds the
-ramp band (cut_px + aa_in, plus blur margin) and that are mid-alpha in live B1
-must be byte-identical between live B1 and the aa_in output, and their hue
+ramp band (cut_px + aa_in, plus blur margin) and that are mid-alpha in the
+before build must be byte-identical between the two builds, and their hue
 (INV-3, measured on the wing zone only) must not drift.
 """
 from __future__ import annotations
@@ -16,12 +19,14 @@ import numpy as np
 from PIL import Image
 
 REPO = Path(__file__).resolve().parent.parent
+OLD = Path(sys.argv[1]) if len(sys.argv) > 1 else REPO / ".cache" / "old_golden"
+NEW = Path(sys.argv[2]) if len(sys.argv) > 2 else REPO / "pokemon"
 sys.path.insert(0, str(REPO / "tools"))
 from rebuild_pokemon_256 import edt_outside, SOLID_THR  # noqa: E402
 
 names = [
     l.strip()
-    for l in (REPO / "scripts" / "golden.txt").read_text().splitlines()
+    for l in (REPO / "tools" / "golden.txt").read_text().splitlines()
     if l.strip() and not l.startswith("#")
 ]
 
@@ -42,8 +47,8 @@ def hue_med(arr: np.ndarray, mask: np.ndarray) -> float:
 print(f"{'file':16s} {'far px':>8s} {'maxdiff':>8s} {'hue drift':>10s}")
 worst = 0
 for n in names:
-    b1 = np.array(Image.open(REPO / "pokemon" / n).convert("RGBA")).astype(np.int16)
-    aa = np.array(Image.open(REPO / "docs/qa/fable_aain" / n).convert("RGBA")).astype(np.int16)
+    b1 = np.array(Image.open(OLD / n).convert("RGBA")).astype(np.int16)
+    aa = np.array(Image.open(NEW / n).convert("RGBA")).astype(np.int16)
     solid = b1[:, :, 3] >= SOLID_THR
     d = edt_outside(solid)
     far = (d > 2.85) & (b1[:, :, 3] > 20) & (b1[:, :, 3] < 200)

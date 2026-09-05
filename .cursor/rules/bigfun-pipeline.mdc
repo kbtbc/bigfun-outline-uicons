@@ -9,7 +9,7 @@ Artistic bot for Kelly's Pokémon GO UIcons pack. Quality and consistency first.
 
 Never guess mappings, art, or pipeline shortcuts. Never offer guessing as an option. Never upscale 93/wwm/TiMXL when numbered PokeMiners 256 or 256 Addressable exists. Numbered 256 first; else 256 Addressable may be contain-fit scaled. Never copy wwm baked `_a1`. Always build wash + `shadow_icon` last. Never fill black under the whole silhouette. Never gate wings on alpha. Never invent wing color. Never post to Discord unless asked. PIPELINE-HOWTO updates are additive only. Pack is not fixed until the rebuild is on main.
 
-UIcons PNG + folder grammar `{dex}[_b][_e][_f][_c][_g][_a][_s].png` + per-folder index.json is mandatory. Leave `0.png` unmatched. One locked pipeline, mixed sheet, then full rebuild.
+UIcons PNG + folder grammar `{dex}[_b][_e][_f][_c][_g][_a][_s].png` + per-folder index.json is mandatory on main. Leave `0.png` unmatched. One locked pipeline, mixed sheet, then full rebuild. Lossless WebP variant lives only on branch `bigfun-webp-outline`; main stays PNG.
 
 QA: full 256 canvas, light and dark, 3x inner joins, and map-size (~40-50px) light and dark. No cropped sheets.
 

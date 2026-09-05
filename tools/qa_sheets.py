@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""QA sheets + invariants for the golden set (agent-fable worktree).
+"""QA sheets + invariants for the golden set.
+
+Usage: python tools/qa_sheets.py [before_dir] [after_dir]
+Defaults: before = .cache/old_golden (extract from git), after = pokemon/.
 
 Sheets (written to docs/qa/sheets/, prefix fable_):
-  fable_mapsize_light/dark    ~48px: TiMXL / live B1 / aa_in prototype
+  fable_mapsize_light/dark    ~48px: TiMXL / before / after
   fable_canvas256_light/dark  full 256 canvas, same three rows (TiMXL 93 centered, not upscaled)
-  fable_zoom3x_inner          3x nearest crop at the top body/stroke join, B1 vs aa_in, light bg
+  fable_zoom3x_inner          3x nearest crop at the top body/stroke join, before vs after, light bg
 
 Checks printed to stdout:
-  INV-1  mid-alpha pixel count aa_in vs live B1 (wings must not black)
-  INV-3  mean hue of translucent region aa_in vs live B1 (<= 10 degrees)
-  _a1    opaque-extent bbox (alpha >= 250) B1 vs aa_in
+  INV-1  mid-alpha pixel count after vs before (wings must not black)
+  INV-3  mean hue of translucent region after vs before (<= 10 degrees)
+  _a1    opaque-extent bbox (alpha >= 250) before vs after
 """
 from __future__ import annotations
 
@@ -21,8 +24,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 REPO = Path(__file__).resolve().parent.parent
-LIVE = REPO / "pokemon"
-AAIN = REPO / "docs" / "qa" / "fable_aain"
+OLD = Path(sys.argv[1]) if len(sys.argv) > 1 else REPO / ".cache" / "old_golden"
+NEW = Path(sys.argv[2]) if len(sys.argv) > 2 else REPO / "pokemon"
 TIMXL = REPO / ".cache" / "timxl" / "pokemon"
 SHEETS = REPO / "docs" / "qa" / "sheets"
 
@@ -32,7 +35,7 @@ FONT = ImageFont.load_default()
 
 names = [
     l.strip()
-    for l in (REPO / "scripts" / "golden.txt").read_text().splitlines()
+    for l in (REPO / "tools" / "golden.txt").read_text().splitlines()
     if l.strip() and not l.startswith("#")
 ]
 
@@ -89,10 +92,10 @@ def zoom3x(out: Path, crop: int = 84) -> None:
     d = ImageDraw.Draw(img)
     for c, n in enumerate(names):
         d.text((label_w + c * z + 2, 2), n.replace(".png", ""), font=FONT, fill=(0, 0, 0, 255))
-    d.text((2, header_h + z // 2), "B1 live", font=FONT, fill=(0, 0, 0, 255))
-    d.text((2, header_h + z + z // 2), "aa_in", font=FONT, fill=(0, 0, 0, 255))
+    d.text((2, header_h + z // 2), "before", font=FONT, fill=(0, 0, 0, 255))
+    d.text((2, header_h + z + z // 2), "after", font=FONT, fill=(0, 0, 0, 255))
     for c, n in enumerate(names):
-        base = load(LIVE, n)
+        base = load(OLD, n)
         a = np.array(base.getchannel("A"))
         ys, xs = np.where(a >= 250)
         if len(xs):
@@ -102,7 +105,7 @@ def zoom3x(out: Path, crop: int = 84) -> None:
             cx = cy = 128
         x0 = max(0, min(256 - crop, cx - crop // 2))
         y0 = max(0, min(256 - crop, cy - crop // 4))
-        for r, folder in enumerate((LIVE, AAIN)):
+        for r, folder in enumerate((OLD, NEW)):
             im = load(folder, n)
             tile = Image.new("RGBA", (crop, crop), LIGHT)
             tile.alpha_composite(im.crop((x0, y0, x0 + crop, y0 + crop)))
@@ -132,8 +135,8 @@ def mid_alpha_stats(name: str) -> tuple[int, int, float, float]:
     """INV-1 counts on each image's own mid-alpha mask; INV-3 hue on the SAME
     mask (live B1's mid-alpha pixels) for both images, so membership shifts at
     the join cannot fake a hue drift."""
-    b1 = np.array(load(LIVE, name)).astype(np.float32)
-    aa = np.array(load(AAIN, name)).astype(np.float32)
+    b1 = np.array(load(OLD, name)).astype(np.float32)
+    aa = np.array(load(NEW, name)).astype(np.float32)
     mid_b1 = (b1[:, :, 3] > 20) & (b1[:, :, 3] < 200)
     mid_aa = (aa[:, :, 3] > 20) & (aa[:, :, 3] < 200)
     hue_b1 = _hue_on_mask(b1, mid_b1)
@@ -151,16 +154,16 @@ def opaque_extent(folder: Path, name: str) -> tuple[int, int]:
 
 
 def main() -> int:
-    rows_map = [("TiMXL", TIMXL, 48), ("B1 live", LIVE, 48), ("aa_in", AAIN, 48)]
+    rows_map = [("TiMXL", TIMXL, 48), ("before", OLD, 48), ("after", NEW, 48)]
     sheet(rows_map, 56, LIGHT, SHEETS / "fable_mapsize_light.png")
     sheet(rows_map, 56, DARK, SHEETS / "fable_mapsize_dark.png")
-    rows_256 = [("TiMXL", TIMXL, 256), ("B1 live", LIVE, 256), ("aa_in", AAIN, 256)]
+    rows_256 = [("TiMXL", TIMXL, 256), ("before", OLD, 256), ("after", NEW, 256)]
     sheet(rows_256, 260, LIGHT, SHEETS / "fable_canvas256_light.png")
     sheet(rows_256, 260, DARK, SHEETS / "fable_canvas256_dark.png")
     zoom3x(SHEETS / "fable_zoom3x_inner.png")
 
     print()
-    print(f"{'file':16s} {'mid b1':>7s} {'mid aa':>7s} {'INV1':>6s} {'hue b1':>7s} {'hue aa':>7s} {'dhue':>5s}")
+    print(f"{'file':16s} {'mid old':>7s} {'mid new':>7s} {'INV1':>6s} {'hue old':>7s} {'hue new':>7s} {'dhue':>5s}")
     fail = False
     for n in names:
         cb, ca, hb, ha = mid_alpha_stats(n)
@@ -177,9 +180,9 @@ def main() -> int:
         print(f"{n:16s} {cb:7d} {ca:7d} {ratio:6.2f} {hb:7.1f} {ha:7.1f} {dh:5.1f}{flag}")
     print()
     for n in ("25_a1.png", "83_a1.png"):
-        wb, hb2 = opaque_extent(LIVE, n)
-        wa, ha2 = opaque_extent(AAIN, n)
-        print(f"_a1 opaque extent {n}: B1 {wb}x{hb2}  aa_in {wa}x{ha2}")
+        wb, hb2 = opaque_extent(OLD, n)
+        wa, ha2 = opaque_extent(NEW, n)
+        print(f"_a1 opaque extent {n}: before {wb}x{hb2}  after {wa}x{ha2}")
     if fail:
         print("INVARIANT FAILURES PRESENT")
         return 1

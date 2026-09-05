@@ -32,7 +32,7 @@ RAW_TIMXL = "https://raw.githubusercontent.com/TiMXL73/PogoAssets/main/uicons-ou
 
 def golden_names() -> list[str]:
     out = []
-    for line in (REPO_ROOT / "scripts" / "golden.txt").read_text().splitlines():
+    for line in (REPO_ROOT / "tools" / "golden.txt").read_text().splitlines():
         line = line.strip()
         if line and not line.startswith("#"):
             out.append(line)

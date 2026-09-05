@@ -10,6 +10,19 @@ Locked (Kelly-approved 2026-09-04):
   - Shadow _a1: light purple wash + shadow_icon on top last @ ~1.12×
   - Purified _a2: same body pipeline (no smoke); keep existing if no source
   - scrub_white_only after composite (keep writer)
+
+Locked additions (Kelly-approved 2026-09-04 night, golden-sheet proven):
+  - AA_IN = 1.25: signed-DF inner ramp at the body/ring join, backed by opaque
+    black on the stroke layer (no white hairline by construction). The ramp and
+    its backing are gated on distance to the opaque core AND to the silhouette
+    edge; interior boundaries and wing membranes stay exact B1 / source alpha.
+    This is the §6.12 backing design from PIPELINE-HOWTO, not the earlier
+    unbacked prototype that drew a white inner line.
+  - POCKET_FILL = 1: the outer ring only draws in background connected to the
+    canvas border. Enclosed faint-art pockets (alpha 2..SIL_THR, Solosis-class
+    gel) keep the source's faint alpha instead of being outlined; truly empty
+    enclosed holes still get the ring.
+  Set BIGFUN_AA_IN=0 / BIGFUN_POCKET_FILL=0 to reproduce the 42cc026 B1 pack.
 """
 from __future__ import annotations
 
@@ -85,18 +98,20 @@ SIL_THR = 20
 SOLID_THR = 128
 STROKE_SAFE = 5
 SMOKE_SCALE = 1.12
-# Prototype inner AA (NOT locked). 0 = production B1, unchanged.
-# When > 0: ramp width in px for the signed-DF body edge ramp near the opaque
-# core, composited over a black stroke backing band so the ramp reveals stroke,
-# never the map tile. Distance-gated on the opaque core; wings stay source alpha.
-AA_IN = float(os.environ.get("BIGFUN_AA_IN", "0") or 0.0)
-# Prototype pocket fill (NOT locked). 0 = production B1, unchanged.
-# When 1: the outer ring is only drawn in the background region connected to
-# the canvas border. Enclosed sub-threshold pockets that contain faint art
-# (alpha > 2, Solosis-class soft gel) keep that faint art instead of getting
-# outlined like background. Truly empty enclosed holes still get the ring.
-# Open gaps (wing lattices) connect to the border and are unaffected.
-POCKET_FILL = int(os.environ.get("BIGFUN_POCKET_FILL", "0") or 0)
+# Inner AA (LOCKED 2026-09-04 at 1.25): ramp width in px for the signed-DF body
+# edge ramp near the opaque core, composited over a black stroke backing band so
+# the ramp reveals stroke, never the map tile. Distance-gated on the opaque core
+# and the silhouette edge; wings stay source alpha. 0 reproduces 42cc026 B1.
+AA_IN = float(os.environ.get("BIGFUN_AA_IN", "1.25") or 0.0)
+# Pocket fill (LOCKED 2026-09-04 at 1): the outer ring is only drawn in the
+# background region connected to the canvas border. Enclosed sub-threshold
+# pockets that contain faint art (alpha > 2, Solosis-class soft gel) keep that
+# faint art instead of getting outlined like background. Truly empty enclosed
+# holes still get the ring. Open gaps (wing lattices) connect to the border and
+# are unaffected. 0 reproduces 42cc026 B1.
+POCKET_FILL = int(os.environ.get("BIGFUN_POCKET_FILL", "1") or 0)
+# Parallel rebuild workers (throughput only, no effect on pixels).
+WORKERS = int(os.environ.get("BIGFUN_WORKERS", "4") or 4)
 UICONS_POKE = re.compile(
     r"^(\d+)(?:_b(\d+))?(?:_e(\d+))?(?:_f(\d+))?(?:_c(\d+))?(?:_g(\d+))?(?:_a(\d+))?(_s)?\.png$"
 )
@@ -463,7 +478,7 @@ def main():
     ok = skip = err = 0
     # ProcessPool needs picklable worker — run sequential chunks with threads instead
     # EDT is python-heavy; use processes via top-level worker
-    with ProcessPoolExecutor(max_workers=4) as ex:
+    with ProcessPoolExecutor(max_workers=WORKERS) as ex:
         futs = [ex.submit(worker, n) for n in names]
         for i, fut in enumerate(as_completed(futs), 1):
             name, status = fut.result()

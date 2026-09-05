@@ -2,7 +2,6 @@ const fs = require('fs')
 
 const SKIP_DIRS = new Set([
   'node_modules',
-  'scripts',
   'docs',
   'tools',
   '.cursor',
@@ -27,7 +26,7 @@ module.exports.update = async function update() {
       }
     }))
     if (!hasSubFolders) {
-      newJson = files.filter(file => file.includes('.png')).sort(sorter.compare)
+      newJson = files.filter(file => file.includes('.png') || file.includes('.webp')).sort(sorter.compare)
     } else {
       const tempJson = newJson
       const sortedKeys = Object.keys(newJson).sort(sorter.compare)
