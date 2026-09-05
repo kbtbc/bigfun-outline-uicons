@@ -90,6 +90,13 @@ SMOKE_SCALE = 1.12
 # core, composited over a black stroke backing band so the ramp reveals stroke,
 # never the map tile. Distance-gated on the opaque core; wings stay source alpha.
 AA_IN = float(os.environ.get("BIGFUN_AA_IN", "0") or 0.0)
+# Prototype pocket fill (NOT locked). 0 = production B1, unchanged.
+# When 1: the outer ring is only drawn in the background region connected to
+# the canvas border. Enclosed sub-threshold pockets that contain faint art
+# (alpha > 2, Solosis-class soft gel) keep that faint art instead of getting
+# outlined like background. Truly empty enclosed holes still get the ring.
+# Open gaps (wing lattices) connect to the border and are unaffected.
+POCKET_FILL = int(os.environ.get("BIGFUN_POCKET_FILL", "0") or 0)
 UICONS_POKE = re.compile(
     r"^(\d+)(?:_b(\d+))?(?:_e(\d+))?(?:_f(\d+))?(?:_c(\d+))?(?:_g(\d+))?(?:_a(\d+))?(_s)?\.png$"
 )
@@ -196,6 +203,28 @@ def add_outer_stroke(
     sil = alpha > SIL_THR
     solid = alpha >= SOLID_THR
 
+    ring_zone = ~sil
+    pocket = None
+    if POCKET_FILL:
+        # Background connected to the canvas border (vectorized flood fill).
+        outside = np.zeros_like(sil)
+        outside[0, :] = ~sil[0, :]
+        outside[-1, :] = ~sil[-1, :]
+        outside[:, 0] = ~sil[:, 0]
+        outside[:, -1] = ~sil[:, -1]
+        prev = -1
+        while int(outside.sum()) != prev:
+            prev = int(outside.sum())
+            grown = outside.copy()
+            grown[1:, :] |= outside[:-1, :]
+            grown[:-1, :] |= outside[1:, :]
+            grown[:, 1:] |= outside[:, :-1]
+            grown[:, :-1] |= outside[:, 1:]
+            outside = grown & (~sil)
+        enclosed = (~sil) & (~outside)
+        pocket = enclosed & (alpha > 2)  # faint art, not a real hole
+        ring_zone = (~sil) & (~pocket)
+
     dist_to_core = edt_outside(solid).astype(np.float32)
     dist_to_core = np.where(solid, 0.0, dist_to_core)
 
@@ -204,8 +233,8 @@ def add_outer_stroke(
     soft = stroke_px + aa_out
     stroke_a = np.zeros_like(alpha, dtype=np.float32)
     # Outer ring only — do not fill under silhouette
-    stroke_a[(~sil) & (dist_out <= hard)] = 255.0
-    band = (~sil) & (dist_out > hard) & (dist_out <= soft)
+    stroke_a[ring_zone & (dist_out <= hard)] = 255.0
+    band = ring_zone & (dist_out > hard) & (dist_out <= soft)
     stroke_a[band] = 255.0 * (1.0 - (dist_out[band] - hard) / max(soft - hard, 1e-6))
     # Tiny underlap under opaque core so the ring seats against hard body edge
     dist_in_solid = edt_outside(~solid)
@@ -219,7 +248,7 @@ def add_outer_stroke(
         # a solid frame but far from the silhouette edge, so they get no backing
         # and cannot be blacked. Plus a slightly deeper underlap inside the core
         # near the edge so the ramp seats on stroke.
-        d_edge = edt_outside(~sil).astype(np.float32)
+        d_edge = edt_outside(ring_zone).astype(np.float32)
         join_band = dist_to_core <= cut_px + aa_in
         near_edge = d_edge <= cut_px + aa_in + 0.6
         backing = sil & (~solid) & join_band & near_edge
@@ -264,17 +293,21 @@ def add_outer_stroke(
         # frames deep inside a wing) keep exact B1 behavior, blended over 1px
         # so no seam forms where the core recedes from the outer edge.
         ramp = 255.0 * np.clip(1.0 - dist_to_core / max(cut_px + aa_in, 1e-6), 0.0, 1.0)
-        inside = alpha > SIL_THR
+        inside = sil  # == alpha > SIL_THR unless SIL_SMOOTH is on
         aa_alpha = np.maximum(alpha, ramp)
         b1_alpha = np.where(near_core, 255.0, alpha)
         t = np.clip(cut_px + aa_in + 0.6 + 1.0 - d_edge, 0.0, 1.0)
         blended = t * aa_alpha + (1.0 - t) * b1_alpha
         body_a[inside] = blended[inside]
     else:
-        harden = near_core & (alpha > SIL_THR)
+        harden = near_core & sil
         body_a[harden] = 255.0
-        far = (~near_core) & (alpha > SIL_THR)
+        far = (~near_core) & sil
         body_a[far] = alpha[far]
+    if pocket is not None:
+        # Enclosed faint-art pockets keep the source's faint alpha instead of
+        # being outlined like background (Solosis-class soft gel).
+        body_a[pocket] = alpha[pocket]
 
     body_out = np.zeros_like(arr)
     body_out[:, :, :3] = straight
