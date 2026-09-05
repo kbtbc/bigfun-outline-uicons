@@ -51,7 +51,8 @@ Produce a high-quality, consistent UIcons Pokémon pack for GO maps.
 | `tools/check_wing_zone.py` | Asserts the distance-protected wing zone is byte-identical between two builds. |
 | `tools/verify_pokemon_256.py` | Canvas, fill, and pad spot checks. |
 | `tools/check_new_pokemon.py` | Weekly watcher core: finds newly released art the pack lacks. |
-| `tools/audit_coverage.py` | Global coverage audit: every master form, costume, gender variant, and shiny either has a pack file or is explained. Run after resolver changes and alongside the watcher. |
+| `tools/audit_coverage.py` | Master-walk audit: every master form, costume, gender variant, and shiny either has a pack file or is explained. Run after resolver changes and alongside the watcher. |
+| `tools/audit_sources.py` | Source-exhaustive audit (the reverse direction): every PokeMiners 256 file must be used by some pack file or explained. Catches art that rides no master field: Gigantamax and Urshifu bread modes, Primal. Fails on REAL-GAP. |
 | `tools/check_public_contract.py` | README, `package.json`, root `index.json` sanity (no `.git` key, UIcons folder set). |
 
 ### Environment
@@ -95,10 +96,18 @@ The saturation punch in `enhance_rgba` is intentional and equally locked.
 |---|---|
 | `25.png` / `25_s.png` | Pikachu, shiny |
 | `25_a1.png` / `25_a2.png` | Shadow, Purified |
-| `6_e1.png` / `6_e2.png` | Mega X, Mega Y |
+| `6_e2.png` / `6_e3.png` | Mega X, Mega Y (proto temp-evo ids; `_e1` = plain Mega, kept as an X compatibility copy on dual-mega species) |
+| `382_e4.png` | Primal Kyogre (temp-evo id 4) |
+| `12_b2.png` | Gigantamax Butterfree (bread id 2; `_b1` Dynamax uses base art by design) |
+| `892_b2.png` / `892_b3.png` | Urshifu single / rapid strike GMAX (source tokens `BREAD_DOUGH_MODE` / `_2`, hue-matched against wwm) |
 | `555_f139.png` | Darmanitan Zen (form id 139) |
 | `201_f1.png` | Unown A |
 | `415_g2.png` | Combee female |
+
+Evolution and bread ids come from the game protos (maps send them raw through
+uicons.js): e1 Mega, e2 Mega X, e3 Mega Y, e4 Primal; b1 Dynamax, b2
+Gigantamax, b3 second GMAX style (Urshifu only). Do not renumber from pack
+conventions: wwm ships X/Y at e1/e2 and lacks e3 entirely, which is a trap.
 
 Alignment variants share body art with the base name; the aura is applied in `process()`.
 

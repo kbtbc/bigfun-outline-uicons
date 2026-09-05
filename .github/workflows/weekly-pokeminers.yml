@@ -56,8 +56,10 @@ jobs:
           POGO_ASSETS: ${{ github.workspace }}/.cache/pogo_assets
           MASTER_JSON: ${{ github.workspace }}/.cache/master-latest.json
         run: |
-          echo "--- coverage audit ---" >> check-report.txt
+          echo "--- coverage audit (master walk) ---" >> check-report.txt
           python tools/audit_coverage.py | tee -a check-report.txt
+          echo "--- source audit (reverse walk) ---" >> check-report.txt
+          python tools/audit_sources.py | tee -a check-report.txt
 
       - name: Regenerate index.json
         if: steps.check.outputs.found == 'yes'
