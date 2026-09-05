@@ -1,0 +1,24 @@
+# Mixed-sheet golden set (prove one pipeline before a full rebuild)
+
+25.png
+25_a1.png
+25_s.png
+28.png
+15.png
+83.png
+83_a1.png
+193.png
+415.png
+469.png
+555.png
+555_f139.png
+577.png
+649.png
+742.png
+743.png
+931.png
+
+# QA for each: full 256 canvas light and dark, 3x nearest inner join, map-size ~48px light and dark.
+# INV-1: mid-alpha pixel count >= 60% of source, scaled for resize.
+# INV-3: mean hue of translucent regions within 10 degrees of source.
+# _a1 size: measure opaque extent, not smoke bbox.

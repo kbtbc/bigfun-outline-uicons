@@ -39,3 +39,7 @@ dist/**/*
 
 # ignore yarn.lock
 yarn.lock
+
+__pycache__/
+*.py[cod]
+uicon-samples/

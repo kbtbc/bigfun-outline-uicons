@@ -1,6 +1,6 @@
 ## bigfun outline UIcons
 
-Enhanced UIcons set rebuilt from PokeMiners high-res assets where an equivalent exists, otherwise the WatWowMap/wwm-uicons file. Same filenames, folders, and UIcons flags. 3px black silhouette stroke plus a saturation punch. No outline on background and spawnpoint.
+UIcons-compatible Pokémon GO outline pack. Pokémon icons are rebuilt from PokeMiners `Pokemon - 256x256`. Addressable 256 is used when no numbered 256 file exists. Same filenames, folders, and UIcons flags as WatWowMap/wwm-uicons.
 
 Fully [UICONS](https://github.com/UIcons/UIcons) compatible.
 
@@ -8,17 +8,17 @@ Raw URL:
 https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/main/
 
 # Coverage
-- Pokémon: PokeMiners Addressable / 256 first (forms, costumes, megas, shinies), wwm fallback if no variant art.
-- Purified `_a2` copies of the matching non-alignment icon.
-- Reward item/mega `_aN` amounts restored as an overlay on the outlined item.
-- Weather day/night, raid egg `_ex`, pokéstop `_p1-3`, extra invasion IDs from the UIcons spec / other packs.
+- Pokémon: numbered PokeMiners 256 first, then 256 Addressable (contain-fit may scale that Addressable art). wwm fallback only if no GO art exists.
+- Shadow `_a1`: purple body wash plus PokeMiners `shadow_icon` on top. Not copied from wwm baked `_a1`.
+- Purified `_a2`: same body pipeline, no smoke.
+- Reward item/mega `_aN` amounts, weather day/night, raid egg `_ex`, pokéstop `_p1-3`, extra invasion IDs from the UIcons spec / other packs.
+- `0.png` placeholders stay unmatched. Home-only unreleased species are out of scope.
 
 # Formatting
-- Pokémon icons are **93×93** to match TiMXL / uicons-outline sizing (contain-fit, aspect preserved, no crop).
-- Other folders keep prior sizes (typically 96×96 from UIcons/wwm).
-- 3px black inset outline + saturation punch on outlined assets.
-- Shadow (`_a1`) purple aura comes from the wwm source art.
-- Mega Charizard and Mega Mewtwo include merged X/Y mega forms from upstream.
+- Pokémon icons are **256×256** squares (contain-fit, aspect preserved, stroke-safe pad ≥5).
+- Outer black stroke ~5px with soft outer AA. Translucent wings keep source mid-alpha (B1, `CUT_PX=1.0`).
+- Saturation punch is intentional.
+- Other folders keep prior sizes (typically 96×96 from UIcons/wwm). No outline on background and spawnpoint.
 
 # Image Credits
 - [PokeMiners](https://github.com/PokeMiners/pogo_assets)

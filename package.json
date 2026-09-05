@@ -1,12 +1,12 @@
 {
-  "name": "wwm-uicons",
+  "name": "bigfun-outline-uicons",
   "version": "1.0.0",
-  "description": "Icon repo for WWM Projects",
+  "description": "UIcons outline pack rebuilt from PokeMiners 256",
   "main": "index.js",
   "private": true,
   "scripts": {
-    "start": "node -e 'require(\"./index\").update()'"
+    "start": "node -e \"require('./index').update()\""
   },
-  "author": "WWM",
+  "author": "BigFun / kbtbc",
   "license": "MIT"
 }

@@ -13,6 +13,7 @@ Locked (Kelly-approved 2026-09-04):
 """
 from __future__ import annotations
 
+import os
 import re
 import sys
 import time
@@ -22,8 +23,57 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageEnhance, ImageFilter
 
-sys.path.insert(0, "/workspace/wwm-uicons")
-from enhance_all import load_indexes, resolve_pokemon, enhance_rgba
+ROOT = Path(__file__).resolve().parent
+OUT_DIR = Path(os.environ.get("BIGFUN_OUT", ROOT / "pokemon"))
+
+
+def _find_pogo_assets() -> Path:
+    env = os.environ.get("POGO_ASSETS", "").strip()
+    if env:
+        return Path(env)
+    for cand in (ROOT.parent / "pogo_assets", Path("/workspace/pogo_assets")):
+        if cand.exists():
+            return cand
+    return Path("/workspace/pogo_assets")
+
+
+def _find_enhance_dir() -> Path:
+    env = os.environ.get("BIGFUN_ENHANCE_DIR", "").strip()
+    cands = []
+    if env:
+        cands.append(Path(env))
+    cands.extend(
+        [
+            ROOT / "scripts",
+            ROOT.parent / "wwm-uicons",
+            Path("/workspace/wwm-uicons"),
+        ]
+    )
+    for cand in cands:
+        if (cand / "enhance_all.py").exists():
+            return cand
+    raise SystemExit(
+        "enhance_all.py with resolve_pokemon was not found. "
+        "Copy the workspace module to scripts/enhance_all.py or set BIGFUN_ENHANCE_DIR. "
+        "Do not use kbtbc/wwm-outline-uicons/scripts/enhance_all.py (no resolver)."
+    )
+
+
+POGO_ASSETS = _find_pogo_assets()
+ICON = POGO_ASSETS / "Images" / "Rocket" / "shadow_icon.png"
+load_indexes = None
+resolve_pokemon = None
+enhance_rgba = None
+
+
+def _ensure_enhance() -> None:
+    global load_indexes, resolve_pokemon, enhance_rgba
+    if resolve_pokemon is not None:
+        return
+    sys.path.insert(0, str(_find_enhance_dir()))
+    from enhance_all import load_indexes as li, resolve_pokemon as rp, enhance_rgba as er
+
+    load_indexes, resolve_pokemon, enhance_rgba = li, rp, er
 
 CANVAS = 256
 STROKE_PX = 5.0
@@ -33,8 +83,6 @@ SIL_THR = 20
 SOLID_THR = 128
 STROKE_SAFE = 5
 SMOKE_SCALE = 1.12
-OUT_DIR = Path("/workspace/bigfun-outline-uicons/pokemon")
-ICON = Path("/workspace/pogo_assets/Images/Rocket/shadow_icon.png")
 UICONS_POKE = re.compile(
     r"^(\d+)(?:_b(\d+))?(?:_e(\d+))?(?:_f(\d+))?(?:_c(\d+))?(?:_g(\d+))?(?:_a(\d+))?(_s)?\.png$"
 )
@@ -295,6 +343,7 @@ _WORKER_READY = False
 def worker(name: str) -> tuple[str, str]:
     global _WORKER_READY
     try:
+        _ensure_enhance()
         if not _WORKER_READY:
             load_indexes()
             _WORKER_READY = True
@@ -314,6 +363,7 @@ def worker(name: str) -> tuple[str, str]:
 
 
 def main():
+    _ensure_enhance()
     load_indexes()
     names = sorted(p.name for p in OUT_DIR.glob("*.png"))
     if len(sys.argv) > 1:

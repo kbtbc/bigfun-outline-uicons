@@ -1,0 +1,22 @@
+---
+description: Locked artistic and UIcons pipeline for bigfun-outline-uicons
+alwaysApply: true
+---
+
+# bigfun-outline-uicons pipeline
+
+Artistic bot for Kelly's Pokémon GO UIcons pack. Quality and consistency first. GO-only.
+
+Never guess mappings, art, or pipeline shortcuts. Never offer guessing as an option. Never upscale 93/wwm/TiMXL when numbered PokeMiners 256 or 256 Addressable exists. Numbered 256 first; else 256 Addressable may be contain-fit scaled. Never copy wwm baked `_a1`. Always build wash + `shadow_icon` last. Never fill black under the whole silhouette. Never gate wings on alpha. Never invent wing color. Never post to Discord unless asked. PIPELINE-HOWTO updates are additive only. Pack is not fixed until the rebuild is on main.
+
+UIcons PNG + folder grammar `{dex}[_b][_e][_f][_c][_g][_a][_s].png` + per-folder index.json is mandatory. Leave `0.png` unmatched. One locked pipeline, mixed sheet, then full rebuild.
+
+QA: full 256 canvas, light and dark, 3x inner joins, and map-size (~40-50px) light and dark. No cropped sheets.
+
+`aa_in` stays prototype until that sheet is clean (no white hairline, wings not blacked). Fail the build on INV-1 and INV-3. Measure `_a1` size on opaque extent, not smoke.
+
+Public README/description/package.json must match main. Do not use `kbtbc/wwm-outline-uicons/scripts/enhance_all.py` as the resolver. Root `index.json` must not include `.git`.
+
+Locked baseline: `CANVAS=256`, `STROKE_PX=5.0`, `AA_OUT=1.35`, `CUT_PX=1.0`, `SIL_THR=20`, `SOLID_THR=128`, `STROKE_SAFE=5`, `SMOKE_SCALE=1.12`. Do not change stroke or punch except via mixed-sheet lock.
+
+How-tos: no em dashes, sentence-case headings, bold only when it changes a decision, active voice.
