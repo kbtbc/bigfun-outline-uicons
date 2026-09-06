@@ -237,7 +237,18 @@ Yanmega, Combee, Beedrill, Cutiefly, Ribombee) while keeping the core edge solid
 After cropping back to 256, `ensure_stroke_safe` rescales and recenters if any content
 margin at `alpha > 20` is under `STROKE_SAFE`. Smoke is exempt and may touch the edge.
 
-### 6.7 Shadow and Purified
+### 6.7 Reward icon normalization
+
+Reward icons inherited Niantic's inconsistent source padding (Poke Ball filled 99%
+of canvas, Great/Ultra 84%), which renders as visibly different sizes at equal
+marker size. Normalized 2026-09-06: `reward/item` contain-fits to **0.85**
+max-extent (round objects read optically larger, and stacked-amount variants need
+edge room); `reward/mega_resource`, `stardust`, `experience`, `pokecoin` to
+**0.99**. `candy`/`xl_candy` were already uniform at 0.98. Do not normalize `gym`
+(size encodes trainer occupancy), `weather` (intentional composition), `raid/egg`
+(glow auras inflate the bbox), or `misc` (heterogeneous symbols).
+
+### 6.8 Shadow and Purified
 
 `_a1`: purple body wash (lerp toward `(95, 30, 160)`, ~0.22 strength, right-biased),
 then the normal stroke pipeline, then PokeMiners `Rocket/shadow_icon.png` composited
