@@ -1,0 +1,54 @@
+name: Sync webp branch
+
+# Rebuilds the webp branch from main whenever icons change on main (e.g. a
+# weekly PokeMiners PR merges). The webp branch is a derived artifact: full
+# lossless re-encode of every PNG, force-pushed. Never edit webp directly.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.png"
+      - "**/index.json"
+      - "index.json"
+      - "index.js"
+      - "README.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-webp
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install pillow
+
+      - name: Point README at the webp branch
+        run: python tools/webp_readme.py
+
+      - name: Convert PNG to lossless WebP
+        run: python tools/export_webp.py --workers 4
+
+      - name: Regenerate index.json
+        run: node -e "require('./index').update()"
+
+      - name: Commit and force-push webp
+        run: |
+          git config user.name "bigfun-bot"
+          git config user.email "actions@github.com"
+          git checkout -B webp
+          git add -A
+          git commit -m "Sync webp from main ${GITHUB_SHA::8} (lossless WebP)"
+          git push origin webp --force

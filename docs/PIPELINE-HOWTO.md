@@ -364,6 +364,13 @@ resolving. The workflow then runs `tools/audit_coverage.py` and appends the repo
 which also catches form/costume+female combos the watcher does not scan. Anything
 that errors lands in a NEEDS-REVIEW list in the PR body for a human.
 
+The PR assigns @kbtbc as the merge reminder. Merging it is the only manual step:
+`.github/workflows/sync-webp.yml` then fires on the push to `main` (any `.png`,
+`index.json`, `index.js`, or `README.md` change), rebuilds the `webp` branch from
+scratch (`tools/webp_readme.py` swaps the README raw-URL block, `tools/export_webp.py`
+re-encodes every PNG losslessly, `index.js` reindexes) and force-pushes it. Never
+commit to `webp` directly; it is a derived artifact and every sync overwrites it.
+
 ## 11. Device cache extraction (Android)
 
 Proven 2026-09-05: icons can be harvested from a phone before PokeMiners publishes,

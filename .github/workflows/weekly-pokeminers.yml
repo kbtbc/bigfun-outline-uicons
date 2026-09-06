@@ -92,4 +92,5 @@ jobs:
           git commit -m "New PokeMiners Pokemon ($(date +%Y-%m-%d))" \
             -m "$(cat check-report.txt)"
           git push -u origin "$branch"
-          gh pr create --fill --body "$(printf 'Automated weekly PokeMiners check.\n\n```\n%s\n```' "$(cat check-report.txt)")"
+          gh pr create --fill --assignee kbtbc \
+            --body "$(printf 'Automated weekly PokeMiners check. Merging this will auto-refresh the webp branch.\n\n```\n%s\n```' "$(cat check-report.txt)")"
