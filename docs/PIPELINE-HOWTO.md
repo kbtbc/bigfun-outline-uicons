@@ -241,12 +241,16 @@ margin at `alpha > 20` is under `STROKE_SAFE`. Smoke is exempt and may touch the
 
 Reward icons inherited Niantic's inconsistent source padding (Poke Ball filled 99%
 of canvas, Great/Ultra 84%), which renders as visibly different sizes at equal
-marker size. Normalized 2026-09-06: `reward/item` contain-fits to **0.85**
-max-extent (round objects read optically larger, and stacked-amount variants need
-edge room); `reward/mega_resource`, `stardust`, `experience`, `pokecoin` to
-**0.99**. `candy`/`xl_candy` were already uniform at 0.98. Do not normalize `gym`
-(size encodes trainer occupancy), `weather` (intentional composition), `raid/egg`
-(glow auras inflate the bbox), or `misc` (heterogeneous symbols).
+marker size. Locked 2026-09-06, applied by `tools/normalize_rewards.py`:
+`reward/item`, `candy`, `xl_candy`, `pokecoin` contain-fit to **0.85** max-extent
+(round objects read optically larger, and stacked-amount variants need edge room);
+`reward/mega_resource`, `stardust`, `experience` to **0.99**. The tool is
+idempotent (skips files within 0.02 of target) and measures the content box at
+`alpha > 2`, not the pipeline's 20, because faint item glows drift below 20 after
+a resize and would otherwise re-trigger on every run. Run it after adding any new
+reward icons. Do not normalize `gym` (size encodes trainer occupancy), `weather`
+(intentional composition), `raid/egg` (glow auras inflate the bbox), or `misc`
+(heterogeneous symbols).
 
 ### 6.8 Shadow and Purified
 
