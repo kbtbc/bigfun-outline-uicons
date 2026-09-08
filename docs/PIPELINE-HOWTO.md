@@ -25,7 +25,8 @@ Produce a high-quality, consistent UIcons Pokémon pack for GO maps.
 6. QA shows the full uncropped 256 canvas, light and dark, plus 3x inner joins and
    map-size (~40 to 50 px). Never cropped sheets.
 7. UIcons PNG naming and per-folder `index.json` are mandatory. `0.png` placeholders stay
-   unmatched. No WebP replacement.
+   unmatched. No WebP replacement on `main`; the lossless WebP variant lives only on the
+   `webp` branch.
 
 ## 2. Repo layout
 
@@ -37,6 +38,7 @@ Produce a high-quality, consistent UIcons Pokémon pack for GO maps.
 | `docs/PIPELINE-HOWTO.md` | This guide. |
 | `docs/qa/sheets/` | Committed QA sheets for the current lock. |
 | `.github/workflows/weekly-pokeminers.yml` | Weekly new-Pokemon watcher (opens a PR, never pushes art unattended). |
+| `.github/workflows/sync-webp.yml` | Rebuilds and force-pushes the `webp` branch whenever icons change on `main`. |
 
 ### Tools
 
@@ -55,6 +57,9 @@ Produce a high-quality, consistent UIcons Pokémon pack for GO maps.
 | `tools/audit_sources.py` | Source-exhaustive audit (the reverse direction): every PokeMiners 256 file must be used by some pack file or explained. Catches art that rides no master field: Gigantamax and Urshifu bread modes, Primal. Fails on REAL-GAP. |
 | `tools/sync_resolve.py` | Resolve-drift guard. `tools/resolve-manifest.json` records the source each pack file was built from; this rebuilds any file whose resolution changed. Closes the base-copy hole: a form registered in the master before its art ships (Pikachu Glass Helmet 2026) gets upgraded to real art automatically the week PokeMiners exports it. |
 | `tools/check_public_contract.py` | README, `package.json`, root `index.json` sanity (no `.git` key, UIcons folder set). |
+| `tools/normalize_rewards.py` | Reward icon size normalization (§6.7). Idempotent; run after adding reward icons. |
+| `tools/export_webp.py` | Re-encodes every pack PNG as lossless WebP in place. Only for the `webp` branch; run by `sync-webp.yml`. |
+| `tools/webp_readme.py` | Swaps the README raw-URL block for the `webp` branch. Run by `sync-webp.yml`. |
 
 ### Environment
 
