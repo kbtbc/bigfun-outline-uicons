@@ -4,11 +4,11 @@ UIcons-compatible Pokémon GO outline pack. Pokémon icons are rebuilt from Poke
 
 Fully [UICONS](https://github.com/UIcons/UIcons) compatible.
 
-Raw URL:
-https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/main/
-
-WebP variant (lossless, ~30% smaller, same icons) on the [`webp`](https://github.com/kbtbc/bigfun-outline-uicons/tree/webp) branch:
+**This is the lossless WebP branch**: pixel-identical to `main`, ~30% smaller downloads. Raw URL:
 https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/webp/
+
+PNG original on [`main`](https://github.com/kbtbc/bigfun-outline-uicons):
+https://raw.githubusercontent.com/kbtbc/bigfun-outline-uicons/main/
 
 # Coverage
 - Pokémon: numbered PokeMiners 256 first, then 256 Addressable (contain-fit may scale that Addressable art). wwm fallback only if no GO art exists.
