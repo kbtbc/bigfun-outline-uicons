@@ -46,7 +46,7 @@ jobs:
         run: |
           set +e
           python tools/check_new_pokemon.py --build | tee check-report.txt
-          code=$?
+          code=${PIPESTATUS[0]}
           set -e
           if [ "$code" != "0" ] && [ "$code" != "2" ]; then exit "$code"; fi
           echo "found=$([ "$code" = "2" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
@@ -60,7 +60,7 @@ jobs:
           set +e
           echo "--- resolve drift (new art for existing names) ---" >> check-report.txt
           python tools/sync_resolve.py --build | tee -a check-report.txt
-          code=$?
+          code=${PIPESTATUS[0]}
           set -e
           if [ "$code" != "0" ] && [ "$code" != "2" ]; then exit "$code"; fi
           if [ "$code" = "2" ]; then echo "found=yes" >> "$GITHUB_OUTPUT"; fi
