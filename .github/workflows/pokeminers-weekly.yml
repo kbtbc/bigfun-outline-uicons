@@ -88,7 +88,14 @@ jobs:
           git config user.email "actions@github.com"
           branch="pokeminers-update-$(date +%Y%m%d)"
           git checkout -b "$branch"
-          git add pokemon "*.json" ":!check-report.txt" ":!.cache"
+          # Stage only what the pipeline writes. The old "*.json" glob also
+          # matched ignored .cache/*.json files and git add refuses those.
+          git add -- pokemon index.json tools/resolve-manifest.json
+          if git diff --cached --quiet; then
+            echo "Nothing staged; no pull request needed."
+            exit 0
+          fi
+          git diff --cached --stat | tail -5
           git commit -m "New PokeMiners Pokemon ($(date +%Y-%m-%d))" \
             -m "$(cat check-report.txt)"
           git push -u origin "$branch"
