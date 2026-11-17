@@ -14,14 +14,22 @@ Pass 2: classify orphans by the UIcons name each would serve:
   portrait   .portrait. assets, not icons: excluded
   twin       the UIcons name ships from another source (numbered-first): fine
   REAL-GAP   mappable name missing from the pack: fail the audit
-  unmapped   token this script cannot map without guessing: listed for a human
-             (legacy numbered form slots ff=11..61 land here; their modern
-             Addressable twins are covered by audit_coverage's master walk)
+  legacy-slot  numbered form slots (ff >= 11) PokeMiners keeps from older game
+             versions: older renders of forms the pack already builds from modern
+             art. Covered when a species has no more distinct slots than real-art
+             pack forms plus the default form (checked 2026-11-17: exactly one
+             more for all 25 multi-form species). A slot that carries a costume
+             id is covered only if the pack has that costume for the species.
+  reviewed   listed in tools/audit-reviewed.json: a person compared the file by
+             image and found it covered. Never add a file only to quiet the audit.
+  unmapped   anything else this script cannot map without guessing: listed for
+             a human. Each entry here needs a decision.
 
 Usage: python tools/audit_sources.py     (exit 1 on any REAL-GAP)
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from collections import Counter
@@ -38,6 +46,17 @@ R._ensure_enhance()
 import enhance_all as E
 
 NUM = re.compile(r"^pokemon_icon_(\d{3})_(\d{2})(?:_(\d{2}))?(_shiny)?\.png$", re.I)
+FORM_RE = re.compile(r"^(\d+)(?:_[be]\d+)*_f(\d+)")
+COSTUME_RE = re.compile(r"^(\d+)(?:_[bef]\d+)*_c(\d+)")
+LEGACY_MIN_FF = 11  # 00 base, 01 female, 51/52 Mega are mapped below; 11+ are legacy form slots
+REVIEWED = TOOLS_DIR / "audit-reviewed.json"
+
+
+def load_reviewed() -> dict[str, str]:
+    try:
+        return json.loads(REVIEWED.read_text(encoding="utf-8")).get("names", {})
+    except FileNotFoundError:
+        return {}
 
 
 def main() -> int:
@@ -47,11 +66,21 @@ def main() -> int:
 
     # ---- pass 1: which sources does the pack use? ----
     used: set[Path] = set()
+    real_forms: dict[str, set[str]] = {}  # dex -> form ids built from art of their own
+    pack_costumes: dict[str, set[str]] = {}  # dex -> costume ids the pack ships
+    reviewed = load_reviewed()
+    for name in existing:
+        cm = COSTUME_RE.match(name)
+        if cm:
+            pack_costumes.setdefault(str(int(cm.group(1))), set()).add(str(int(cm.group(2))))
     for p in sorted(POKEMON.glob("*.png")):
         name = p.name
         aura = R.parse_aura(name)
         key = re.sub(r"_a" + str(aura), "", name) if aura else name
         src, _tag = E.resolve_pokemon(key)
+        fm = FORM_RE.match(key)
+        if src is not None and fm:
+            real_forms.setdefault(str(int(fm.group(1))), set()).add(fm.group(2))
         if src is None and "_f" in key:
             # no-art forms are explicit base-art copies keyed on the base name
             src, _tag = E.resolve_pokemon(re.sub(r"_f\d+", "", key))
@@ -90,6 +119,8 @@ def main() -> int:
     twin = portrait = 0
     gaps: list[str] = []
     unmapped: list[str] = []
+    legacy: dict[str, list[str]] = {}  # dex -> legacy numbered slot files, judged below
+    reviewed_hit: list[str] = []
     for n in orphans:
         if ".portrait." in n.lower():
             portrait += 1
@@ -142,19 +173,48 @@ def main() -> int:
                         parts.append("s")
                     uic = "_".join(parts) + ".png"
         if uic is None:
-            unmapped.append(n)
+            nm = NUM.match(n)
+            if nm and int(nm.group(2)) >= LEGACY_MIN_FF:
+                legacy.setdefault(str(int(nm.group(1))), []).append(n)
+            elif n in reviewed:
+                reviewed_hit.append(n)
+            else:
+                unmapped.append(n)
         elif uic in existing:
             twin += 1
         else:
             gaps.append(f"{uic}  <-  {n}")
 
+    # Legacy numbered slots: covered when the species has no more distinct slots than
+    # real-art pack forms plus the default form, and a costume slot has its costume.
+    legacy_ok: list[str] = []
+    for dex, files in sorted(legacy.items(), key=lambda kv: int(kv[0])):
+        slots = {NUM.match(f).group(2) for f in files}
+        room = len(real_forms.get(dex, set())) + 1
+        for f in files:
+            cc = NUM.match(f).group(3)
+            costume_ok = cc is None or str(int(cc)) in pack_costumes.get(dex, set())
+            if len(slots) <= room and costume_ok:
+                legacy_ok.append(f)
+            else:
+                unmapped.append(f)
+    unmapped.sort()
+    stale = sorted(set(reviewed) - set(orphans))
+
     print(f"sources: {len(all_srcs)}  used: {len(used & set(all_srcs))}")
     print(f"portrait(excluded): {portrait}")
     print(f"twins(covered): {twin}")
+    print(f"legacy numbered slots(covered): {len(legacy_ok)}  "
+          f"species: {len({str(int(NUM.match(f).group(1))) for f in legacy_ok})}")
+    print(f"reviewed(covered, tools/audit-reviewed.json): {len(reviewed_hit)}")
+    if stale:
+        print(f"reviewed entries no longer orphaned (remove from the file): {len(stale)}")
     print(f"REAL-GAP: {len(gaps)}")
     for g in gaps[:60]:
         print("  ", g)
     print(f"unmapped(for a human): {len(unmapped)}")
+    for n in unmapped[:60]:
+        print("  ", n)
     pats = Counter()
     for n in unmapped:
         nm = NUM.match(n)

@@ -54,7 +54,7 @@ Produce a high-quality, consistent UIcons Pokémon pack for GO maps.
 | `tools/verify_pokemon_256.py` | Canvas, fill, and pad spot checks. |
 | `tools/check_new_pokemon.py` | Weekly watcher core: finds newly released art the pack lacks. |
 | `tools/audit_coverage.py` | Master-walk audit: every master form, costume, gender variant, and shiny either has a pack file or is explained. Run after resolver changes and alongside the watcher. |
-| `tools/audit_sources.py` | Source-exhaustive audit (the reverse direction): every PokeMiners 256 file must be used by some pack file or explained. Catches art that rides no master field: Gigantamax and Urshifu bread modes, Primal. Fails on REAL-GAP. |
+| `tools/audit_sources.py` | Source-exhaustive audit (the reverse direction): every PokeMiners 256 file must be used by some pack file or explained. Catches art that rides no master field: Gigantamax and Urshifu bread modes, Primal. Fails on REAL-GAP. Sorts what it cannot name into legacy-slot, reviewed (`tools/audit-reviewed.json`) and unmapped; only unmapped needs a person. |
 | `tools/sync_resolve.py` | Resolve-drift guard. `tools/resolve-manifest.json` records the source each pack file was built from; this rebuilds any file whose resolution changed. Closes the base-copy hole: a form registered in the master before its art ships (Pikachu Glass Helmet 2026) gets upgraded to real art automatically the week PokeMiners exports it. |
 | `tools/check_public_contract.py` | README, `package.json`, root `index.json` sanity (no `.git` key, UIcons folder set). |
 | `tools/normalize_rewards.py` | Reward icon size normalization (§6.7). Idempotent; run after adding reward icons. |
@@ -395,8 +395,21 @@ which the watcher does not scan. Read that report in each PR and build the gaps 
 through `rebuild_pokemon_256.worker` as the full family (base, `_s`, `_a1`, `_a1_s`, `_a2`,
 `_a2_s`), then confirm both audits read 0. This closed 5 names (30 icons) on 2026-11-17:
 Pikachu `25_f3376_g2` and `25_f3379_g2`, Zubat `41_f3362_g2`, Golbat `42_f3363_g2`, and
-Duraludon `884_b2`. The `unmapped(for a human)` count in `audit_sources.py` (375 on that
-date, mostly legacy numbered form slots) does not fail the audit and has not been reviewed.
+Duraludon `884_b2`.
+
+`audit_sources.py` sorts the source files it cannot name into three groups instead of one
+long list. **Legacy numbered slots** (`pokemon_icon_DDD_FF`, FF 11 or higher) are older
+renders of forms the pack already ships: they count as covered when a species has no
+more distinct slots than real-art pack forms plus the default form, and a slot with a
+costume id needs that costume in the pack. This held exactly for the 25 multi-form
+species on 2026-11-17 (slots = real-art forms + 1). **Reviewed** files are listed in
+`tools/audit-reviewed.json` after someone compared them by image: 56 legacy event
+costume files (2019-2021 `pmNNNN` names) and 2 `pm479.f.*` duplicates of base Rotom.
+Anything else is **unmapped** and needs a decision. On 2026-11-17 that was 3 files, the
+Xerneas `pokemon_icon_716_00_old` set: unused rainbow-antlered art, while `716_f2650`
+(Xerneas Active) is a copy of the base art. Whether that art is Active art is not
+settled. Add a file to `audit-reviewed.json` only after comparing it by image; the audit
+prints any listed file that is no longer an orphan so stale entries get removed.
 
 The PR assigns @kbtbc as the merge reminder. Merging it is the only manual step:
 `.github/workflows/sync-webp.yml` then fires on the push to `main` (any `.png`,
