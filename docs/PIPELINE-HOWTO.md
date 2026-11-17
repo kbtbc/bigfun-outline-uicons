@@ -37,7 +37,7 @@ Produce a high-quality, consistent UIcons Pokémon pack for GO maps.
 | `tools/` | The whole pipeline. Not indexed, not part of the pack. |
 | `docs/PIPELINE-HOWTO.md` | This guide. |
 | `docs/qa/sheets/` | Committed QA sheets for the current lock. |
-| `.github/workflows/weekly-pokeminers.yml` | Weekly new-Pokemon watcher (opens a PR, never pushes art unattended). |
+| `.github/workflows/pokeminers-weekly.yml` | Weekly new-Pokemon watcher (opens a PR, never pushes art unattended). |
 | `.github/workflows/sync-webp.yml` | Rebuilds and force-pushes the `webp` branch whenever icons change on `main`. |
 
 ### Tools
@@ -296,6 +296,25 @@ Each of these was tried or shipped and failed. Do not repeat them.
     mixed golden sheet before rebuilding anything.
 11. **Prose cannot fail a build.** The wing chop was documented and still shipped.
     Invariants below are the guard.
+12. **`$?` after a pipe is the last command's exit code, not the first.** The weekly
+    workflow ran `python tools/check_new_pokemon.py --build | tee check-report.txt` and then
+    read `code=$?`. Actions runs `bash -e` with no `pipefail`, so `$?` was `tee`'s 0 and
+    Python's exit code 2 ("found new icons") never reached the script. From the 2026-09-21
+    run on, every run that found something built the icons, skipped the PR step, and
+    discarded them: 108 icons (Machamp Wildarea 2026, Bramblin, Brambleghast, Minior) went
+    undelivered for weeks. Read `${PIPESTATUS[0]}` immediately after the pipeline.
+13. **A `*.json` glob in `git add` also matches ignored `.cache/*.json`**, and git refuses
+    the whole command (exit 1). That step had never run before, because trap 12 skipped it.
+    Stage explicit paths only: `pokemon`, `index.json`, `tools/resolve-manifest.json`.
+14. **A dispatched run can sit `queued` with zero jobs and refuse to cancel or delete**
+    (HTTP 409 on force-cancel, 403 on delete). GitHub gave no reason and its status page
+    showed no incident. On 2026-11-16 the workflow file was renamed, and the first dispatch
+    under the new name started within seconds; that is why the watcher file is now
+    `pokeminers-weekly.yml`. The cause was not established. The three stuck runs of the old
+    name remain as orphans.
+15. **A green weekly run is not proof of delivery.** Ten weekly runs reported success
+    while, from 2026-09-21, delivering nothing. Check that a PR exists after any run whose
+    log says `new icons built`.
 
 ## 8. QA and invariants
 
@@ -355,7 +374,7 @@ never drops files. Icons whose source does not resolve are skipped and left unto
 
 ## 10. Weekly PokeMiners watcher
 
-`.github/workflows/weekly-pokeminers.yml` runs Monday 09:00 UTC and on manual dispatch:
+`.github/workflows/pokeminers-weekly.yml` runs Monday 09:00 UTC and on manual dispatch:
 sparse-clones PokeMiners, fetches the game master, runs
 `tools/check_new_pokemon.py --build`, regenerates `index.json`, and **opens a pull
 request** with the report. It never pushes art to `main` unattended.
@@ -368,6 +387,16 @@ without build as explicit base-art copies. It also detects new female art (numbe
 resolving. The workflow then runs `tools/audit_coverage.py` and appends the report,
 which also catches form/costume+female combos the watcher does not scan. Anything
 that errors lands in a NEEDS-REVIEW list in the PR body for a human.
+
+The audits are informational, and nothing builds what they report. `audit_sources.py`
+(REAL-GAP) and `audit_coverage.py` (MISSING-GENDER) list names that exist as PokeMiners
+art but not in the pack, mainly form+female combos and Gigantamax or Primal bread modes,
+which the watcher does not scan. Read that report in each PR and build the gaps by hand
+through `rebuild_pokemon_256.worker` as the full family (base, `_s`, `_a1`, `_a1_s`, `_a2`,
+`_a2_s`), then confirm both audits read 0. This closed 5 names (30 icons) on 2026-11-17:
+Pikachu `25_f3376_g2` and `25_f3379_g2`, Zubat `41_f3362_g2`, Golbat `42_f3363_g2`, and
+Duraludon `884_b2`. The `unmapped(for a human)` count in `audit_sources.py` (375 on that
+date, mostly legacy numbered form slots) does not fail the audit and has not been reviewed.
 
 The PR assigns @kbtbc as the merge reminder. Merging it is the only manual step:
 `.github/workflows/sync-webp.yml` then fires on the push to `main` (any `.png`,
