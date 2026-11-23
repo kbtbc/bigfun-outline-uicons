@@ -1383,6 +1383,30 @@ null,
 "pokemon_icon_114_00_shiny.png",
 "256"
 ],
+"114_f3372.png": [
+"pokemon_icon_114_00.png",
+"base-copy:256"
+],
+"114_f3372_a1.png": [
+"pokemon_icon_114_00.png",
+"base-copy:256"
+],
+"114_f3372_a1_s.png": [
+"pokemon_icon_114_00_shiny.png",
+"base-copy:256"
+],
+"114_f3372_a2.png": [
+"pokemon_icon_114_00.png",
+"base-copy:256"
+],
+"114_f3372_a2_s.png": [
+"pokemon_icon_114_00_shiny.png",
+"base-copy:256"
+],
+"114_f3372_s.png": [
+"pokemon_icon_114_00_shiny.png",
+"base-copy:256"
+],
 "114_s.png": [
 "pokemon_icon_114_00_shiny.png",
 "256"
@@ -8782,6 +8806,30 @@ null,
 "194_f3009_s.png": [
 "pm194.fPALDEA.s.icon.png",
 "256-addr"
+],
+"194_f3370.png": [
+"pokemon_icon_194_00.png",
+"base-copy:256"
+],
+"194_f3370_a1.png": [
+"pokemon_icon_194_00.png",
+"base-copy:256"
+],
+"194_f3370_a1_s.png": [
+"pokemon_icon_194_00_shiny.png",
+"base-copy:256"
+],
+"194_f3370_a2.png": [
+"pokemon_icon_194_00.png",
+"base-copy:256"
+],
+"194_f3370_a2_s.png": [
+"pokemon_icon_194_00_shiny.png",
+"base-copy:256"
+],
+"194_f3370_s.png": [
+"pokemon_icon_194_00_shiny.png",
+"base-copy:256"
 ],
 "194_g2.png": [
 "pokemon_icon_194_01.png",
@@ -23642,6 +23690,102 @@ null,
 "25_f3379_s.png": [
 "pm25.fHALLOWEEN_2026.s.icon.png",
 "256-addr"
+],
+"25_f3381.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3381_a1.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3381_a1_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3381_a2.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3381_a2_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3381_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3382.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3382_a1.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3382_a1_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3382_a2.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3382_a2_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3382_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3383.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3383_a1.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3383_a1_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3383_a2.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3383_a2_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3383_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3384.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3384_a1.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3384_a1_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3384_a2.png": [
+"pokemon_icon_025_00.png",
+"base-copy:256"
+],
+"25_f3384_a2_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
+],
+"25_f3384_s.png": [
+"pokemon_icon_025_00_shiny.png",
+"base-copy:256"
 ],
 "25_f894.png": [
 "pm25.fFALL_2019.icon.png",
@@ -40598,6 +40742,30 @@ null,
 "465_b1_s.png": [
 "pokemon_icon_465_00_shiny.png",
 "256"
+],
+"465_f3373.png": [
+"pokemon_icon_465_00.png",
+"base-copy:256"
+],
+"465_f3373_a1.png": [
+"pokemon_icon_465_00.png",
+"base-copy:256"
+],
+"465_f3373_a1_s.png": [
+"pokemon_icon_465_00_shiny.png",
+"base-copy:256"
+],
+"465_f3373_a2.png": [
+"pokemon_icon_465_00.png",
+"base-copy:256"
+],
+"465_f3373_a2_s.png": [
+"pokemon_icon_465_00_shiny.png",
+"base-copy:256"
+],
+"465_f3373_s.png": [
+"pokemon_icon_465_00_shiny.png",
+"base-copy:256"
 ],
 "465_g2.png": [
 "pokemon_icon_465_01.png",
@@ -74794,6 +74962,30 @@ null,
 "980_b1_s.png": [
 "pm980.s.icon.png",
 "256-addr"
+],
+"980_f3371.png": [
+"pm980.icon.png",
+"base-copy:256-addr"
+],
+"980_f3371_a1.png": [
+"pm980.icon.png",
+"base-copy:256-addr"
+],
+"980_f3371_a1_s.png": [
+"pm980.s.icon.png",
+"base-copy:256-addr"
+],
+"980_f3371_a2.png": [
+"pm980.icon.png",
+"base-copy:256-addr"
+],
+"980_f3371_a2_s.png": [
+"pm980.s.icon.png",
+"base-copy:256-addr"
+],
+"980_f3371_s.png": [
+"pm980.s.icon.png",
+"base-copy:256-addr"
 ],
 "980_s.png": [
 "pm980.s.icon.png",
